@@ -8,7 +8,6 @@ __IMPORTANT:__ The endpoint is stored in plain-text in the state. This is a pote
 resource "sumologic_http_source" "http_source" {
   name                = "HTTP"
   description         = "My description"
-  message_per_request = true
   category            = "my/source/category"
   collector_id        = "${sumologic_collector.collector.id}"
 }
@@ -27,6 +26,13 @@ In addition to the common properties, the following arguments are supported:
 The following attributes are exported:
 - `id` - The internal ID of the source.
 - `url` - The HTTP endpoint to use for sending data to this source.
+
+## Import
+HTTP sources can be imported using the collector and source IDs (`collector/source`), e.g.:
+
+```hcl
+terraform import sumologic_http_source.test 123/456
+```
 
 [Back to Index][0]
 

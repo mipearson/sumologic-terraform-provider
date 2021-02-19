@@ -10,6 +10,7 @@ type PollingSource struct {
 	ContentType   string               `json:"contentType"`
 	ScanInterval  int                  `json:"scanInterval"`
 	Paused        bool                 `json:"paused"`
+	URL           string               `json:"url"`
 	ThirdPartyRef PollingThirdPartyRef `json:"thirdPartyRef,omitempty"`
 }
 
@@ -70,6 +71,10 @@ func (s *Client) GetPollingSource(collectorID, sourceID int) (*PollingSource, er
 
 	if err != nil {
 		return nil, err
+	}
+
+	if body == nil {
+		return nil, nil
 	}
 
 	type PollingSourceResponse struct {

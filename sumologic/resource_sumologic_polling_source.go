@@ -30,6 +30,12 @@ func resourceSumologicPollingSource() *schema.Resource {
 		Required: true,
 		ForceNew: false,
 	}
+	pollingSource.Schema["url"] = &schema.Schema{
+		Type:     schema.TypeString,
+		Required: false,
+		ForceNew: false,
+		Computed: true,
+	}
 	pollingSource.Schema["authentication"] = &schema.Schema{
 		Type:     schema.TypeList,
 		Required: true,
@@ -138,6 +144,10 @@ func resourceSumologicPollingSourceRead(d *schema.ResourceData, meta interface{}
 	source, err := c.GetPollingSource(d.Get("collector_id").(int), id)
 
 	if err != nil {
+		return err
+	}
+
+	if source == nil {
 		log.Printf("[WARN] Polling source not found, removing from state: %v - %v", id, err)
 		d.SetId("")
 
@@ -155,6 +165,7 @@ func resourceSumologicPollingSourceRead(d *schema.ResourceData, meta interface{}
 	d.Set("content_type", source.ContentType)
 	d.Set("scan_interval", source.ScanInterval)
 	d.Set("paused", source.Paused)
+	d.Set("url", source.URL)
 
 	return nil
 }
@@ -168,6 +179,7 @@ func resourceToPollingSource(d *schema.ResourceData) PollingSource {
 		Paused:       d.Get("paused").(bool),
 		ScanInterval: d.Get("scan_interval").(int),
 		ContentType:  d.Get("content_type").(string),
+		URL:          d.Get("url").(string),
 	}
 
 	pollingResource := PollingResource{

@@ -5,14 +5,23 @@ __IMPORTANT:__ The AWS credentials are stored in plain-text in the state. This i
 
 ## Example Usage
 ```hcl
+locals {
+  filters = [{
+    name        = "Exclude Comments"
+    filter_type = "Exclude"
+    regexp      = "#.*"
+  }]
+}
+
 resource "sumologic_polling_source" "s3_audit" {
   name          = "Amazon S3 Audit"
   description   = "My description"
   category      = "aws/s3audit"
   content_type  = "AwsS3AuditBucket"
-  scan_interval = 1
+  scan_interval = 300000
   paused        = false
   collector_id  = "${sumologic_collector.collector.id}"
+  filters       = "${local.filters}"
 
   authentication {
     access_key = "someKey"
@@ -33,11 +42,11 @@ resource "sumologic_collector" "collector" {
 
 ## Argument reference
 In addition to the common properties, the following arguments are supported:
- - `content_type` - (Required) The content-type of the collected data. Details can be found in the [Sumologic documentation for hosted sources][2].
- - `scan_interval` - (Required) Time interval of scans for new data.
+ - `content_type` - (Required) The content-type of the collected data. Details can be found in the [Sumologic documentation for hosted sources][1].
+ - `scan_interval` - (Required) Time interval in milliseconds of scans for new data. The default is 300000 and the minimum value is 1000 milliseconds.
  - `paused` - (Required) When set to true, the scanner is paused. To disable, set to false.
  - `authentication` - (Required) Authentication details for connecting to the S3 bucket.
-     + `type` - (Required) Must be either `S3BucketAuthentication` or `AWSRoleBasedAuthentication` 
+     + `type` - (Required) Must be either `S3BucketAuthentication` or `AWSRoleBasedAuthentication`
      + `access_key` - (Required) Your AWS access key if using type `S3BucketAuthentication`
      + `secret_key` - (Required) Your AWS secret key if using type `S3BucketAuthentication`
      + `role_arn` - (Required) Your AWS role ARN if using type `AWSRoleBasedAuthentication`

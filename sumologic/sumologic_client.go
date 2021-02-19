@@ -7,13 +7,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
 )
+
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
 
 type Client struct {
 	AccessID    string
 	AccessKey   string
 	Environment string
 	BaseURL     *url.URL
+	httpClient  HttpClient
 }
 
 var endpoints = map[string]string{
@@ -22,13 +28,11 @@ var endpoints = map[string]string{
 	"eu":  "https://api.eu.sumologic.com/api/v1/",
 	"au":  "https://api.au.sumologic.com/api/v1/",
 	"de":  "https://api.de.sumologic.com/api/v1/",
+	"jp":  "https://api.jp.sumologic.com/api/v1/",
+	"ca":  "https://api.ca.sumologic.com/api/v1/",
 }
 
-type ErrorResponse struct {
-	Status  int    `json:"status"`
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
+var rateLimiter = time.Tick(time.Minute / 240)
 
 func (s *Client) PostWithCookies(urlPath string, payload interface{}) ([]byte, []*http.Cookie, error) {
 	relativeURL, err := url.Parse(urlPath)
@@ -51,7 +55,8 @@ func (s *Client) PostWithCookies(urlPath string, payload interface{}) ([]byte, [
 	req.Header.Add("Content-Type", "application/json")
 	req.SetBasicAuth(s.AccessID, s.AccessKey)
 
-	resp, err := http.DefaultClient.Do(req)
+	<-rateLimiter
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -64,12 +69,7 @@ func (s *Client) PostWithCookies(urlPath string, payload interface{}) ([]byte, [
 	}
 
 	if resp.StatusCode >= 400 {
-		var errorResponse ErrorResponse
-		if err = json.Unmarshal(d, &errorResponse); err != nil {
-			return nil, nil, err
-		}
-
-		return nil, nil, errors.New(errorResponse.Message)
+		return nil, nil, errors.New(string(d))
 	}
 
 	return d, respCookie, nil
@@ -95,7 +95,8 @@ func (s *Client) GetWithCookies(urlPath string, cookies []*http.Cookie) ([]byte,
 		req.AddCookie(cookie)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	<-rateLimiter
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, "", err
 	}
@@ -105,13 +106,10 @@ func (s *Client) GetWithCookies(urlPath string, cookies []*http.Cookie) ([]byte,
 		return nil, "", err
 	}
 
-	if resp.StatusCode >= 400 {
-		var errorResponse ErrorResponse
-		if err = json.Unmarshal(d, &errorResponse); err != nil {
-			return nil, "", err
-		}
-
-		return nil, "", errors.New(errorResponse.Message)
+	if resp.StatusCode == 404 {
+		return nil, "", nil
+	} else if resp.StatusCode >= 400 {
+		return nil, "", errors.New(string(d))
 	}
 
 	return d, resp.Header.Get("ETag"), nil
@@ -126,7 +124,8 @@ func (s *Client) Post(urlPath string, payload interface{}) ([]byte, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.SetBasicAuth(s.AccessID, s.AccessKey)
 
-	resp, err := http.DefaultClient.Do(req)
+	<-rateLimiter
+	resp, err := s.httpClient.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -135,9 +134,7 @@ func (s *Client) Post(urlPath string, payload interface{}) ([]byte, error) {
 	d, _ := ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode >= 400 {
-		var errorResponse ErrorResponse
-		_ = json.Unmarshal(d, &errorResponse)
-		return nil, errors.New(errorResponse.Message)
+		return nil, errors.New(string(d))
 	}
 
 	return d, nil
@@ -159,7 +156,8 @@ func (s *Client) Put(urlPath string, payload interface{}) ([]byte, error) {
 
 	req.SetBasicAuth(s.AccessID, s.AccessKey)
 
-	resp, err := http.DefaultClient.Do(req)
+	<-rateLimiter
+	resp, err := s.httpClient.Do(req)
 
 	if err != nil {
 		return nil, err
@@ -168,9 +166,7 @@ func (s *Client) Put(urlPath string, payload interface{}) ([]byte, error) {
 	d, _ := ioutil.ReadAll(resp.Body)
 
 	if resp.StatusCode >= 400 {
-		var errorResponse ErrorResponse
-		_ = json.Unmarshal(d, &errorResponse)
-		return nil, errors.New(errorResponse.Message)
+		return nil, errors.New(string(d))
 	}
 
 	return d, nil
@@ -184,14 +180,15 @@ func (s *Client) Get(urlPath string) ([]byte, string, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.SetBasicAuth(s.AccessID, s.AccessKey)
 
-	resp, _ := http.DefaultClient.Do(req)
+	<-rateLimiter
+	resp, _ := s.httpClient.Do(req)
 
 	d, _ := ioutil.ReadAll(resp.Body)
 
-	if resp.StatusCode >= 400 {
-		var errorResponse ErrorResponse
-		_ = json.Unmarshal(d, &errorResponse)
-		return nil, "", errors.New(errorResponse.Message)
+	if resp.StatusCode == 404 {
+		return nil, "", nil
+	} else if resp.StatusCode >= 400 {
+		return nil, "", errors.New(string(d))
 	}
 
 	return d, resp.Header.Get("ETag"), nil
@@ -205,7 +202,8 @@ func (s *Client) Delete(urlPath string) ([]byte, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.SetBasicAuth(s.AccessID, s.AccessKey)
 
-	resp, _ := http.DefaultClient.Do(req)
+	<-rateLimiter
+	resp, _ := s.httpClient.Do(req)
 
 	d, _ := ioutil.ReadAll(resp.Body)
 
@@ -221,6 +219,7 @@ func NewClient(accessID, accessKey, environment string) (*Client, error) {
 		AccessID:    accessID,
 		AccessKey:   accessKey,
 		Environment: environment,
+		httpClient:  http.DefaultClient,
 	}
 
 	client.BaseURL, _ = url.Parse(endpoints[client.Environment])

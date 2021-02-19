@@ -1,9 +1,11 @@
+[![Build Status](https://travis-ci.org/SumoLogic/sumologic-terraform-provider.svg?branch=master)](https://travis-ci.org/SumoLogic/sumologic-terraform-provider) [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/SumoLogic/sumologic-terraform-provider/issues)
+
 # terraform-provider-sumologic
 This provider is used to manage Hosted collectors and sources supported by Sumo Logic.
 
 ## Support
 
-The code in this repository has been developed in collaboration with the Sumo Logic community and is not supported via standard Sumo Logic Support channels. For any issues or questions please submit an issue directly on GitHub. The maintainers of this project will work directly with the community to answer any questions, address bugs, or review any requests for new features. 
+The code in this repository has been developed in collaboration with the Sumo Logic community and is not supported via standard Sumo Logic Support channels. For any issues or questions please submit an issue within the GitHub repository. The maintainers of this project will work directly with the community to answer any questions, address bugs, or review any requests for new features. 
 
 ## License
 Released under Apache 2.0 License.
@@ -44,9 +46,9 @@ $ terraform plan
 ```
 
 ## Argument Reference
-- `access_id` - (Optional) This is the Sumo Logic Access ID. It must be provided, but it can also be source from the SUMOLOGIC_ACCESSID environment variable.
-- `access_key` - (Optional) This is the Sumo Logic Access Key. It must be provided, but it can also be sourced from the SUMOLOGIC_ACCESSKEY variable.
-- `environment` - (Optional) This is the API endpoint to use. Default is us2. See the [Sumo Logic documentation][1] for details on which environment you should use.
+- `access_id` - (Optional) This is the Sumo Logic Access ID. It must be provided, but it can also be sourced from the SUMOLOGIC_ACCESSID environment variable.
+- `access_key` - (Optional) This is the Sumo Logic Access Key. It must be provided, but it can also be sourced from the SUMOLOGIC_ACCESSKEY environment variable.
+- `environment` - (Optional) This is the API endpoint to use. Default is us2, but it can also be sourced from the SUMOLOGIC_ENVIRONMENT environment variable. See the [Sumo Logic documentation][1] for details on which environment you should use.
 
 # Building the provider
 

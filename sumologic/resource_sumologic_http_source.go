@@ -1,9 +1,8 @@
 package sumologic
 
 import (
-	"strconv"
-
 	"log"
+	"strconv"
 
 	"github.com/hashicorp/terraform/helper/schema"
 )
@@ -13,6 +12,9 @@ func resourceSumologicHTTPSource() *schema.Resource {
 	httpSource.Create = resourceSumologicHTTPSourceCreate
 	httpSource.Read = resourceSumologicHTTPSourceRead
 	httpSource.Update = resourceSumologicHTTPSourceUpdate
+	httpSource.Importer = &schema.ResourceImporter{
+		State: resourceSumologicSourceImport,
+	}
 
 	httpSource.Schema["message_per_request"] = &schema.Schema{
 		Type:     schema.TypeBool,
@@ -91,6 +93,10 @@ func resourceSumologicHTTPSourceRead(d *schema.ResourceData, meta interface{}) e
 	source, err := c.GetHTTPSource(d.Get("collector_id").(int), id)
 
 	if err != nil {
+		return err
+	}
+
+	if source == nil {
 		log.Printf("[WARN] HTTP source not found, removing from state: %v - %v", id, err)
 		d.SetId("")
 

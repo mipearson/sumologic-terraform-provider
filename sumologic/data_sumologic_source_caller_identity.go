@@ -16,11 +16,6 @@ func dataSourceSumologicCallerIdentity() *schema.Resource {
 				Computed: true,
 			},
 
-			"access_key": {
-				Type:     schema.TypeString,
-				Computed: true,
-			},
-
 			"environment": {
 				Type:     schema.TypeString,
 				Computed: true,
@@ -34,7 +29,6 @@ func dataSourceSumologicCallerIdentityRead(d *schema.ResourceData, meta interfac
 
 	d.SetId(time.Now().UTC().String())
 	d.Set("access_id", c.AccessID)
-	d.Set("access_key", c.AccessKey)
 	d.Set("environment", c.Environment)
 
 	return nil
